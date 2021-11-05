@@ -27,3 +27,6 @@ tasks.withType<KotlinCompile>() {
 application {
     mainClass.set("MainKt")
 }
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(8))
+}

@@ -3,8 +3,29 @@ import kotlin.streams.toList
 
 fun main() {
     val text1 = readFile("Lorem1.txt")
-    println(getKeyLength(text1))
+    val text2 = readFile("Lorem2.txt")
+    val text3 = readFile("Lorem3.txt")
+
+    decryptAndPrint(text1, text2, text3)
+
 }
+
+fun decryptAndPrint(vararg texts:String) {
+    for (text in texts) {
+        decryptAndPrint(text, mostCommonChar = ' ')
+    }
+}
+
+fun decryptAndPrint(text:String,mostCommonChar: Char) {
+    val keyLength = getKeyLength(text);
+    println("key length: $keyLength")
+    val keys = getKeys(text, keyLength,mostCommonChar)
+    println("keys: $keys")
+    val decryptedText = decrypt(text,keys)
+    println("decrypted text: $decryptedText")
+}
+
+
 
 fun readFile(fileName: String) = File(fileName).readText(Charsets.US_ASCII)
 
@@ -22,7 +43,7 @@ fun getCharFrequencyMap(text:String) :Map<Int,Double> {
 }
 
 fun getRelativeFrequency(text: String, character:Int) :Double {
-    val numberOfOccurrences =text.chars().filter{ it == character }.distinct().count()
+    val numberOfOccurrences =text.chars().filter{ it == character }.count()
     return numberOfOccurrences / text.length.toDouble()
 }
 
@@ -40,7 +61,6 @@ fun getKeyLength(text: String) :Int{
         }
         lengthCoincidenceMap += keyLength to coincidences.average()
     }
-    println(lengthCoincidenceMap.entries.sortedByDescending { it.value })
     val highestCoincidences = lengthCoincidenceMap.entries.sortedByDescending { it.value }.map { it.key }.take(5)
     return gcd(highestCoincidences)
 }
@@ -62,4 +82,33 @@ fun gcd(numbers:List<Int>):Int {
         result = gcd(result,numbers[i])
     }
     return result
+}
+fun getKeys(text:String, keyLength:Int, mostCommonChar: Char = ' '):List<Int> {
+    val encryptedTexts = getEncryptedTextsWithSameKey(text,keyLength)
+    return encryptedTexts.map { findKey(it,mostCommonChar) }.toList()
+}
+
+fun getEncryptedTextsWithSameKey(text:String, keyLength:Int):List<String> {
+    var textsWithSameKey:MutableList<String> = mutableListOf()
+    for (i in 0 until keyLength) {
+        textsWithSameKey += text.chars().toArray().filterIndexed { index, _ -> index%keyLength==i }.map { it.toChar() }.joinToString("")
+    }
+    return textsWithSameKey
+}
+fun findKey(text:String, mostFrequentChar:Char):Int {
+    val charFrequencyMap = getCharFrequencyMap(text)
+    val mostFrequentEncryptedChar = charFrequencyMap.entries.sortedByDescending { it.value }.map { it.key }[0]
+    return (mostFrequentEncryptedChar-mostFrequentChar.code+128)%128
+}
+fun decrypt(text: String, keys:List<Int>):String {
+    var decryptedText = String()
+    for (i in text.indices) {
+        var currentKey = keys[i % keys.size]
+        decryptedText += decrypt(text[i],currentKey)
+    }
+    return decryptedText
+}
+
+fun decrypt(character: Char, key:Int):Char {
+    return ((character.code-key+128)%128).toChar()
 }
