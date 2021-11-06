@@ -1,5 +1,5 @@
 # vigenère-cypher-decrypter
-## Output
+## Output [![run with Gradle](https://github.com/corite/vigenere-cypher-decrypter/actions/workflows/main.yml/badge.svg)](https://github.com/corite/vigenere-cypher-decrypter/actions/workflows/main.yml)
 ```kotlin
 key length: 3
 keys: [115, 116, 122]
