@@ -17,11 +17,11 @@ fun decryptAndPrint(vararg texts:String) {
     }
 }
 
-fun decryptAndPrint(text:String,mostCommonChar: Char) {
+fun decryptAndPrint(text: String,mostCommonChar: Char) {
     val keyLength = getKeyLength(text)
     println("key length: $keyLength")
-    val keys = getKeys(text, keyLength,mostCommonChar)
-    println("keys: $keys")
+    val keys = getKeys(text, keyLength, mostCommonChar)
+    println("keys: ${keys.joinToString (", "){ it.toString() }}")
     val decryptedText = decrypt(text,keys)
     println("decrypted text: $decryptedText")
 }
@@ -61,18 +61,20 @@ fun getKeyLength(text: String) :Int{
         //iterating over all possible key-lengths
         val coincidences: MutableList<Double> = mutableListOf()
         for (remainder in 0 until keyLength) {
-            //for each key-length go through all the residue classes
+            //for each key-length go through all the residue classes (all chars that are possibly encrypted with the same key)
             val textSnippet = text.chars().toArray().filterIndexed { index, _ -> index % keyLength == remainder  }.map { it.toChar() }.joinToString("")
+
             coincidences += getCoincidenceIndex(textSnippet)
         }
         lengthCoincidenceMap += keyLength to coincidences.average()
         //only save the average of all residue classes for one key-length
     }
-    return findCorrectKeyLength(lengthCoincidenceMap.toList().sortedByDescending { it.second}.take(5).toMap())
+    return findCorrectKeyLength(lengthCoincidenceMap.toList().sortedByDescending { it.second }.take(5).toMap())
     //only taking the top 5 for consideration (only a rule of thumb, it worked in my cases)
 }
+
 fun findCorrectKeyLength(lengthCoincidenceMap: Map<Int,Double>):Int {
-    val lengthsToConsider = lengthCoincidenceMap.entries.filter { (it.value-0.06).absoluteValue < 0.015 }.map { it.key }.toList()
+    val lengthsToConsider = lengthCoincidenceMap.entries.filter { (it.value-0.06).absoluteValue < 0.015 }.map { it.key }.toIntArray()
     //only take into account the values that have approximately the desired coincidence-index
     //this is especially important when the keys are long, because then there are not (many) multiples of the key-length present (Lorem3.txt)
     return gcd(lengthsToConsider)
@@ -97,24 +99,24 @@ fun gcd(aInt:Int,bInt:Int):Int {
 /**
  * returns the greatest common divisor of the numbers
  */
-fun gcd(numbers:List<Int>):Int {
+fun gcd(numbers:IntArray):Int {
     var result = numbers[0]
     for (i in 1 until numbers.size) {
         result = gcd(result,numbers[i])
     }
     return result
 }
-fun getKeys(text:String, keyLength:Int, mostCommonChar: Char = ' '):List<Int> {
+fun getKeys(text:String, keyLength:Int, mostCommonChar: Char = ' '):IntArray {
     val encryptedTexts = getEncryptedTextsWithSameKey(text,keyLength)
     //get all text snippets that have been encrypted with the same key
-    return encryptedTexts.map { findKey(it,mostCommonChar) }.toList()
+    return encryptedTexts.map { findKey(it,mostCommonChar) }.toIntArray()
 }
 
-fun getEncryptedTextsWithSameKey(text:String, keyLength:Int):List<String> {
-    val textsWithSameKey:MutableList<String> = mutableListOf()
+fun getEncryptedTextsWithSameKey(text:String, keyLength:Int):Array<String> {
+    val textsWithSameKey = Array(keyLength) {""}
     for (i in 0 until keyLength) {
-        textsWithSameKey += text.chars().toArray().filterIndexed { index, _ -> index%keyLength==i }.map { it.toChar() }.joinToString("")
-        //gets all chars from each residue class %key-length and puts them in an array of texts
+        textsWithSameKey[i] = text.chars().toArray().filterIndexed { index, _ -> index % keyLength==i }.map { it.toChar() }.joinToString("")
+        //gets all chars from each residue class % key-length and puts them in an array of texts
     }
     return textsWithSameKey
 }
@@ -125,13 +127,13 @@ fun getEncryptedTextsWithSameKey(text:String, keyLength:Int):List<String> {
 fun findKey(text:String, mostFrequentChar:Char):Int {
     val charFrequencyMap = getCharFrequencyMap(text)
     val mostFrequentEncryptedChar = charFrequencyMap.entries.sortedByDescending { it.value }.map { it.key }[0]
-    return (mostFrequentEncryptedChar-mostFrequentChar.code+128)%128
+    return (mostFrequentEncryptedChar-mostFrequentChar.code+128) % 128
 }
 
 /**
- * decrypts a vigenère cipher with the given list of keys
+ * decrypts a vigenère cipher with the given array of keys
  */
-fun decrypt(text: String, keys:List<Int>):String {
+fun decrypt(text: String, keys:IntArray):String {
     var decryptedText = String()
     for (i in text.indices) {
         val currentKey = keys[i % keys.size]
